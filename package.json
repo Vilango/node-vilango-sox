@@ -1,6 +1,6 @@
 {
-  "name": "sox",
-  "version": "0.1.0",
+  "name": "vilango-sox",
+  "version": "0.1.2",
   "description": "node.js interface to the sox audio utility",
   "main": "index.js",
   "scripts": {
@@ -8,9 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/superjoe30/node-sox"
+    "url": "https://github.com/Vilango/node-vilango-sox"
   },
   "author": "Andrew Kelley",
+  "contributors":[
+        {"name": "Gerwin Brunner", "url": "http://gerwinbrunner.com", "email": "gerwin.brunner@gmail.com"}
+  ],
   "keywords": [
     "sox",
     "audio",

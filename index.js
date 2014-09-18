@@ -99,6 +99,13 @@ function Transcode(inputFile, outputFile, options) {
   if (this.options.format === 'mp3') {
     this.options.compressionQuality = this.options.compressionQuality || 5;
   }
+
+  this.options.effectsArray = []
+  for (var effect in this.options.effects) {
+    //console.log("effect", effect, this.options.effects[effect]);
+    this.options.effectsArray.push(effect);
+    this.options.effectsArray.push(this.options.effects[effect]);
+  }
 }
 
 util.inherits(Transcode, EventEmitter);
@@ -115,16 +122,20 @@ Transcode.prototype.start = function() {
 
     var args = [
       '--guard',
-      '--magic',
+      //'--magic',
       '--show-progress',
       self.inputFile,
-      '-r', self.options.sampleRate,
+      '-r', self.options.sampleRate+"",
       '-t', self.options.format,
-      '-C', Math.round(self.options.bitRate / 1024) +
-            self.options.compressionQuality,
-      '-c', self.options.channelCount,
+      '-C '+ (Math.round(self.options.bitRate / 1024) + self.options.compressionQuality),
+      '-c ' + self.options.channelCount,
       self.outputFile
     ];
+
+    if (self.options.effectsArray.length > 0) {
+      args = args.concat(self.options.effectsArray)
+    }
+
     var bin = childProcess.spawn('sox', args);
     var stdout = "";
     bin.stdout.setEncoding('utf8');
