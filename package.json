@@ -27,6 +27,7 @@
     "rimraf": "~2.0.2"
   },
   "dependencies": {
-    "batch": "~0.3.2"
+    "batch": "~0.3.2",
+    "temp": "~0.8.1"
   }
 }

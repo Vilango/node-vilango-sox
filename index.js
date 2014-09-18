@@ -2,9 +2,16 @@ var childProcess = require('child_process')
   , EventEmitter = require('events').EventEmitter
   , Batch = require('batch')
   , util = require('util')
+  , temp = require('temp')
+  , fs = require('fs');
+
+var rimraf     = require('rimraf'),
+    rimrafSync = rimraf.sync;
+
 
 exports.identify = identify;
 exports.transcode = transcode;
+exports.transcodeStream = transcodeStream;
 
 var SENTINEL = /[\n\r]/
 
@@ -80,6 +87,64 @@ function identify(inputFile, callback){
   }
 }
 
+
+function transcodeStream(inputStream, outputStream, options) {
+  if (!(inputStream && outputStream)) {
+    console.log("We do not have all streams", inputStream, outputStream);
+    return;
+  }
+
+  return new TranscodeStream(inputStream, outputStream, options)
+}
+
+function TranscodeStream(inputStream, outputStream, options){
+  var self = this;
+  EventEmitter.call(this);
+
+  var origFile = temp.createWriteStream();
+  inputStream.pipe(origFile);
+
+  origFile.on("close", function(){
+    //console.log("we got the temp file", origFile.path+"");
+    var format = options.format || 'mp3';
+
+    var convertedFile = origFile.path+"."+ format;
+
+
+    var t = new Transcode(origFile.path+"", convertedFile, options);
+    t.on("error", function(err) {
+      self.emit('error', err);
+    });
+
+    t.on("progress", function(amountDone, amountTotal) {
+      self.emit('progress', amountDone, amountTotal);
+    });
+
+    t.on("src", function(info) {
+      self.emit('src', info);
+    });
+
+    t.on("dest", function(info) {
+      self.emit('dest', info);
+    });
+
+    t.on("end", function() {
+      // we are done... now we have to stream back
+      var outStream = fs.createReadStream(convertedFile);
+      outStream.pipe(outputStream);
+
+      outStream.on('close', function() {
+        rimrafSync(origFile.path)
+        rimrafSync(convertedFile)
+
+        self.emit('end');
+      });
+    });
+    t.start();
+  });
+}
+util.inherits(TranscodeStream, EventEmitter);
+
 function transcode(inputFile, outputFile, options) {
   return new Transcode(inputFile, outputFile, options);
 }
@@ -119,6 +184,12 @@ Transcode.prototype.start = function() {
     }
 
     self.emit('src', src);
+    
+    var compression = ""
+    if (self.options.compressionQuality) {
+      compression = '-C '+ (Math.round(self.options.bitRate / 1024) + self.options.compressionQuality)  
+    }
+    
 
     var args = [
       '--guard',
@@ -127,10 +198,11 @@ Transcode.prototype.start = function() {
       self.inputFile,
       '-r', self.options.sampleRate+"",
       '-t', self.options.format,
-      '-C '+ (Math.round(self.options.bitRate / 1024) + self.options.compressionQuality),
-      '-c ' + self.options.channelCount,
+      compression,
+      '-c '+ self.options.channelCount,
       self.outputFile
     ];
+    args = args.filter(Boolean)
 
     if (self.options.effectsArray.length > 0) {
       args = args.concat(self.options.effectsArray)
