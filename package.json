@@ -1,6 +1,6 @@
 {
   "name": "vilango-sox",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "node.js interface to the sox audio utility",
   "main": "index.js",
   "scripts": {
